@@ -656,6 +656,144 @@ function Confirm-ClaudeAuthenticationManually {
     return ($response.Trim().ToUpper() -eq 'Y')
 }
 
+function Test-PiecesAuthentication {
+    <#
+    .SYNOPSIS
+        Detects if Pieces Desktop is authenticated
+
+    .DESCRIPTION
+        Checks if Pieces Desktop process is running OR if data folders exist.
+        This is a best-effort check since Pieces doesn't document credential files.
+
+    .OUTPUTS
+        Boolean - $true if authenticated/configured, $false otherwise
+    #>
+
+    # Method 1: Check if Pieces Desktop process is running
+    $piecesProcess = Get-Process -Name "Pieces*" -ErrorAction SilentlyContinue
+
+    if ($piecesProcess) {
+        Write-Host "[OK] Pieces Desktop is currently running" -ForegroundColor Green
+        return $true
+    }
+
+    # Method 2: Check for Pieces data folders
+    $possiblePaths = @(
+        "$env:LOCALAPPDATA\Pieces",
+        "$env:APPDATA\Pieces",
+        "$env:USERPROFILE\.pieces"
+    )
+
+    foreach ($path in $possiblePaths) {
+        if (Test-Path $path) {
+            # Check if folder has content (not just empty)
+            $items = Get-ChildItem -Path $path -Recurse -ErrorAction SilentlyContinue
+            if ($items.Count -gt 0) {
+                Write-Host "[OK] Pieces data folder found: $path" -ForegroundColor Green
+                return $true
+            }
+        }
+    }
+
+    Write-Host "[INFO] No existing Pieces authentication detected" -ForegroundColor Gray
+    return $false
+}
+
+function Start-PiecesAuthenticationNewWindow {
+    <#
+    .SYNOPSIS
+        Launches Pieces Desktop for user authentication
+
+    .DESCRIPTION
+        Opens Pieces Desktop using protocol handler or executable path,
+        guides user through authentication, and waits for confirmation.
+
+    .OUTPUTS
+        Boolean - $true if user confirms authentication, $false otherwise
+    #>
+
+    Write-Host ""
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host "  Pieces Desktop Authentication" -ForegroundColor Cyan
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Pieces Desktop will now launch for authentication." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "What will happen:" -ForegroundColor Cyan
+    Write-Host "  1. Pieces Desktop app opens" -ForegroundColor Gray
+    Write-Host "  2. Sign-in screen appears in the app" -ForegroundColor Gray
+    Write-Host "  3. Your browser opens for authentication" -ForegroundColor Gray
+    Write-Host "  4. Choose your sign-in method:" -ForegroundColor Gray
+    Write-Host "     - Email (verification code sent to inbox)" -ForegroundColor Gray
+    Write-Host "     - Google, GitHub, or other platforms" -ForegroundColor Gray
+    Write-Host "  5. Complete sign-in in browser" -ForegroundColor Gray
+    Write-Host "  6. Return to Pieces Desktop app" -ForegroundColor Gray
+    Write-Host "  7. Authentication is complete!" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "IMPORTANT: Keep Pieces Desktop open until authentication completes!" -ForegroundColor Yellow
+    Write-Host ""
+
+    # Give user time to read instructions
+    Write-Host "Launching Pieces Desktop in 3 seconds..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 3
+
+    # Launch Pieces Desktop
+    Write-Host "[~] Launching Pieces Desktop..." -ForegroundColor Cyan
+    try {
+        $launched = $false
+
+        # Method 1: Try protocol handler
+        try {
+            Start-Process "pieces-for-developers://open" -ErrorAction Stop
+            $launched = $true
+        } catch {
+            # Method 2: Try to find executable
+            $possibleExePaths = @(
+                "$env:LOCALAPPDATA\Programs\Pieces\Pieces.exe",
+                "$env:LOCALAPPDATA\Pieces\Pieces.exe",
+                "${env:ProgramFiles}\Pieces\Pieces.exe",
+                "${env:ProgramFiles(x86)}\Pieces\Pieces.exe"
+            )
+
+            foreach ($exePath in $possibleExePaths) {
+                if (Test-Path $exePath) {
+                    Start-Process $exePath
+                    $launched = $true
+                    break
+                }
+            }
+        }
+
+        if ($launched) {
+            Write-Host "[OK] Pieces Desktop launched" -ForegroundColor Green
+        } else {
+            Write-Host "[X] Could not launch automatically" -ForegroundColor Red
+            Write-Host "    Please launch Pieces Desktop manually from Start Menu" -ForegroundColor Yellow
+        }
+
+        Write-Host ""
+        Write-Host "[INFO] Complete the authentication in Pieces Desktop" -ForegroundColor Cyan
+        Write-Host "[INFO] This window will wait for you to finish..." -ForegroundColor Gray
+        Write-Host ""
+
+        # Wait for user confirmation
+        $authComplete = Read-Host "Did you complete authentication successfully? (Y/N)"
+
+        if ($authComplete.Trim().ToUpper() -eq 'Y') {
+            Write-Host "[OK] Authentication confirmed!" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "[INFO] Authentication not completed" -ForegroundColor Yellow
+            return $false
+        }
+
+    } catch {
+        Write-Host "[X] Failed to launch Pieces Desktop: $_" -ForegroundColor Red
+        Write-Host "    Please launch manually from Start Menu" -ForegroundColor Yellow
+        return $false
+    }
+}
+
 #endregion
 
 #region Main Installation Flow
@@ -666,6 +804,60 @@ function Start-Installation {
 
     Write-Host "This installer will set up your development environment."
     Write-Host "It will check for required tools and install them only if missing."
+    Write-Host ""
+
+    # Core vs Full Install Choice
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host "  Installation Type" -ForegroundColor Cyan
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Choose your installation type:" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  [C] Core Installation" -ForegroundColor White
+    Write-Host "      - Node.js, Git, VS Code" -ForegroundColor Gray
+    Write-Host "      - Claude Code CLI" -ForegroundColor Gray
+    Write-Host "      - VS Code Chat Extension" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  [F] Full Installation (RECOMMENDED)" -ForegroundColor Green
+    Write-Host "      - Everything in Core, PLUS:" -ForegroundColor Gray
+    Write-Host "      - Pieces Desktop: AI-powered coding assistant" -ForegroundColor Gray
+    Write-Host "        * Code snippet manager with AI search" -ForegroundColor Gray
+    Write-Host "        * Context-aware code suggestions" -ForegroundColor Gray
+    Write-Host "        * Integrates with your workflow seamlessly" -ForegroundColor Gray
+    Write-Host "        * Works offline once configured" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Pieces Desktop enhances your coding experience with intelligent" -ForegroundColor Cyan
+    Write-Host "code management and AI-powered assistance. Highly recommended!" -ForegroundColor Cyan
+    Write-Host ""
+
+    $installType = $null
+    while ($installType -notin @('c', 'f')) {
+        $userInput = Read-Host "Select [C] for Core or [F] for Full (then press Enter)"
+
+        if (-not [string]::IsNullOrWhiteSpace($userInput)) {
+            $firstChar = $userInput.Trim().ToLower().Substring(0,1)
+            if ($firstChar -in @('c', 'f')) {
+                $installType = $firstChar
+            } else {
+                Write-Host "[!] Invalid input. Please type 'C' or 'F'" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[!] Please type 'C' or 'F' (not just Enter)" -ForegroundColor Yellow
+        }
+    }
+
+    $installPieces = ($installType -eq 'f')
+
+    if ($installPieces) {
+        Write-Host ""
+        Write-Host "[OK] Full Installation selected - Pieces Desktop will be included!" -ForegroundColor Green
+    } else {
+        Write-Host ""
+        Write-Host "[OK] Core Installation selected - Pieces Desktop will be skipped" -ForegroundColor Cyan
+        Write-Host "     (You can install Pieces later from https://pieces.app)" -ForegroundColor Gray
+    }
+    Write-Host ""
+
     $null = Read-Host "Press Enter to continue or Ctrl+C to cancel"
     Write-Host ""
 
@@ -676,9 +868,25 @@ function Start-Installation {
     $needsCode = -not (Test-Command -Command "code" -Argument "--version" -ExpectedOutputPattern "." -DisplayName "Visual Studio Code")
     $needsClaude = -not (Test-Command -Command "claude" -Argument "--version" -ExpectedOutputPattern "." -DisplayName "Claude Code CLI")
 
+    # Check Pieces Desktop (only if Full installation selected)
+    $needsPiecesDesktop = $false
+    if ($installPieces) {
+        try {
+            $piecesInstalled = winget list --id 9NB490VLC1LL 2>&1 | Out-String
+            if ($piecesInstalled -match "9NB490VLC1LL") {
+                Write-Host "[FOUND] Pieces Desktop is already installed. Skipping installation." -ForegroundColor Green
+                $needsPiecesDesktop = $false
+            } else {
+                $needsPiecesDesktop = $true
+            }
+        } catch {
+            $needsPiecesDesktop = $true
+        }
+    }
+
     # --- Package Manager Detection (only if needed) ---
     $packageManager = $null
-    if ($needsNode -or $needsGit -or $needsCode) {
+    if ($needsNode -or $needsGit -or $needsCode -or $needsPiecesDesktop) {
         Write-Host "`nStep 2: One or more tools are missing. Detecting package manager..." -ForegroundColor Cyan
         if (Get-Command winget -ErrorAction SilentlyContinue) {
             Write-Host "[FOUND] Using winget as the primary package manager." -ForegroundColor Green
@@ -1375,8 +1583,91 @@ Read-Host 'Press Enter to close'
         Write-Host ""
     }
 
-    # --- 9. Create Installation Log ---
-    Write-Host "`nStep 9: Creating installation log..." -ForegroundColor Cyan
+    # --- 9. Pieces Desktop Installation ---
+    $piecesInstallSuccess = $false
+    $authenticatedPieces = $false
+
+    if ($needsPiecesDesktop) {
+        Write-Host "`nStep 9: Installing Pieces Desktop..." -ForegroundColor Cyan
+        Write-Host ""
+
+        # Only available via WinGet (Microsoft Store)
+        if ($packageManager -eq 'winget') {
+            Write-Host "[INFO] Package: Pieces Desktop (ID: 9NB490VLC1LL)" -ForegroundColor Gray
+            Write-Host "[INFO] Source: Microsoft Store" -ForegroundColor Gray
+            Write-Host "[INFO] Note: Microsoft Store may show a prompt - click 'Get' or 'Install'" -ForegroundColor Yellow
+            Write-Host ""
+
+            winget install -e --id 9NB490VLC1LL `
+                -s msstore `
+                --accept-package-agreements `
+                --accept-source-agreements `
+                --disable-interactivity
+
+            $piecesInstallSuccess = ($LASTEXITCODE -eq 0)
+
+            if ($piecesInstallSuccess) {
+                Write-Host "[OK] Pieces Desktop installed successfully!" -ForegroundColor Green
+                Write-Host "[INFO] Installation includes both Pieces Desktop and PiecesOS." -ForegroundColor Gray
+            } else {
+                Write-Host "[X] Failed to install Pieces Desktop" -ForegroundColor Red
+                Write-Host "[INFO] You can install manually from: https://pieces.app" -ForegroundColor Yellow
+            }
+        } else {
+            # Chocolatey doesn't have Pieces Desktop
+            Write-Host "[INFO] Pieces Desktop requires WinGet (Microsoft Store)" -ForegroundColor Yellow
+            Write-Host "[INFO] Skipping Pieces installation (Chocolatey doesn't support it)" -ForegroundColor Gray
+            Write-Host "[INFO] You can install manually from: https://pieces.app" -ForegroundColor Gray
+            $piecesInstallSuccess = $false
+        }
+
+        # --- Pieces Authentication (Optional) ---
+        if ($piecesInstallSuccess) {
+            Write-Host ""
+            Write-Host "Pieces Desktop Authentication" -ForegroundColor Cyan
+            Write-Host "Pieces requires an account to use. Authenticate now?" -ForegroundColor Yellow
+            Write-Host ""
+
+            # Check existing authentication
+            Write-Host "[~] Checking existing authentication..." -ForegroundColor Cyan
+            if (Test-PiecesAuthentication) {
+                Write-Host "[OK] Pieces may already be configured!" -ForegroundColor Green
+                $authenticatedPieces = $true
+            } else {
+                Write-Host "[INFO] No existing authentication detected" -ForegroundColor Gray
+                Write-Host ""
+
+                # Prompt for authentication
+                $authChoice = $null
+                while ($authChoice -notin @('a', 's')) {
+                    $userInput = Read-Host "Type [A] to Authenticate or [S] to Skip (then press Enter)"
+
+                    if (-not [string]::IsNullOrWhiteSpace($userInput)) {
+                        $firstChar = $userInput.Trim().ToLower().Substring(0,1)
+                        if ($firstChar -in @('a', 's')) {
+                            $authChoice = $firstChar
+                        } else {
+                            Write-Host "[!] Invalid input. Please type 'A' or 'S'" -ForegroundColor Yellow
+                        }
+                    } else {
+                        Write-Host "[!] Please type 'A' or 'S' (not just Enter)" -ForegroundColor Yellow
+                    }
+                }
+
+                if ($authChoice -eq 'a') {
+                    $authSuccess = Start-PiecesAuthenticationNewWindow
+                    $authenticatedPieces = $authSuccess
+                } else {
+                    Write-Host "[WARNING] Skipping Pieces authentication" -ForegroundColor Yellow
+                    Write-Host "          You can authenticate later by launching Pieces Desktop from Start Menu" -ForegroundColor Gray
+                    $authenticatedPieces = $false
+                }
+            }
+        }
+    }
+
+    # --- 10. Create Installation Log ---
+    Write-Host "`nStep 10: Creating installation log..." -ForegroundColor Cyan
 
     # Determine already installed vs newly installed tools
     $alreadyInstalled = @()
@@ -1407,6 +1698,15 @@ Read-Host 'Press Enter to close'
         $newlyInstalled += "Claude Code CLI"
     }
 
+    # Track Pieces Desktop installation status
+    if ($installPieces) {
+        if (-not $needsPiecesDesktop) {
+            $alreadyInstalled += "Pieces Desktop"
+        } elseif ($piecesInstallSuccess) {
+            $newlyInstalled += "Pieces Desktop"
+        }
+    }
+
     # Gather installation paths
     $installPaths = @{
         "NodeJS" = if (Get-Command node -ErrorAction SilentlyContinue) { (Get-Command node).Path } else { "Not Found" }
@@ -1415,16 +1715,19 @@ Read-Host 'Press Enter to close'
         "VSCode" = if (Get-Command code -ErrorAction SilentlyContinue) { (Get-Command code).Path } else { "Not Found" }
         "Claude" = if (Get-Command claude -ErrorAction SilentlyContinue) { (Get-Command claude).Path } else { "Not Found" }
         "ClaudeProjectsFolder" = Join-Path $env:USERPROFILE "ClaudeProjects"
+        "PiecesDesktop" = if ($installPieces) { "Microsoft Store App (check Start Menu)" } else { "Not Installed (Core installation)" }
     }
 
     # Create log object
     $installLog = @{
         "InstallerVersion" = "3.0.1"
         "InstallDate" = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        "InstallationType" = if ($installPieces) { "Full (with Pieces Desktop)" } else { "Core" }
         "PackageManager" = if ($packageManager) { $packageManager } else { "None (all tools were already installed)" }
         "AlreadyInstalled" = $alreadyInstalled
         "NewlyInstalled" = $newlyInstalled
         "Authenticated" = $authenticatedSuccessfully
+        "AuthenticatedPieces" = $authenticatedPieces
         "InstallationPaths" = $installPaths
         "SystemInfo" = @{
             "OS" = (Get-CimInstance Win32_OperatingSystem).Caption
@@ -1447,7 +1750,7 @@ Read-Host 'Press Enter to close'
         Write-Host "[WARNING] Failed to create installation log: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
-    # --- 10. Pre-VS Code Authentication Check ---
+    # --- 11. Pre-VS Code Authentication Check ---
     if (-not $authenticatedSuccessfully) {
         Write-Host ""
         Write-Host "===========================================================" -ForegroundColor Yellow
@@ -1503,7 +1806,7 @@ Read-Host 'Press Enter to close'
         }
     }
 
-    # --- 11. Installation Complete ---
+    # --- 12. Installation Complete ---
     Write-Host ""
     Write-Host "===========================================================" -ForegroundColor Green
     Write-Host "          Installation Complete!" -ForegroundColor Green
@@ -1633,7 +1936,35 @@ $( ($installPaths.GetEnumerator() | ForEach-Object { "- **$($_.Key):** ``$($_.Va
 - Restart VS Code after authentication
 - Check the extension is enabled in VS Code
 
-### 7. Next Steps
+**Pieces Desktop issues:**
+- Launch Pieces Desktop from Start Menu
+- Sign in with your account
+- Check that PiecesOS is running in system tray
+
+### 7. Pieces Desktop
+
+$( if ($installPieces) { @"
+**Status:** $( if ($authenticatedPieces) { "Installed and authenticated!" } else { "Installed (authentication pending)" } )
+
+Pieces Desktop is your AI-powered coding assistant and snippet manager.
+
+**Features:**
+- Code snippet storage and organization with AI search
+- Context-aware code suggestions and completions
+- Integrates seamlessly with your development workflow
+- Works offline once configured
+- Supports multiple programming languages
+
+**To use Pieces Desktop:**
+1. Launch Pieces Desktop from Start Menu
+2. Sign in with your account (if not already authenticated)
+3. Start saving and organizing code snippets
+4. Use AI features to search and retrieve code
+
+**Documentation:** https://docs.pieces.app
+"@ } else { "**Status:** Not installed (Core installation selected)`n`nYou can install Pieces Desktop manually from: https://pieces.app" } )
+
+### 8. Next Steps
 
 1. **Create your first project:**
    ``````bash
@@ -1650,17 +1981,17 @@ $( ($installPaths.GetEnumerator() | ForEach-Object { "- **$($_.Key):** ``$($_.Va
 
 3. **Start coding with AI assistance!**
 
-### 8. Uninstallation
+### 9. Uninstallation
 
 If you need to uninstall Claude Code:
 - Run the included ``ClaudeCodeUninstaller.ps1`` script
 - It will reference the installation log for selective removal
 
-### 9. Package Manager Used
+### 10. Package Manager Used
 
 This installation used: **$( if ($packageManager) { $packageManager } else { "None (all tools were already installed)" } )**
 
-### 10. Support & Documentation
+### 11. Support & Documentation
 
 - **Official Docs:** https://docs.anthropic.com/claude/docs
 - **Installation Log:** ``$logPath``
