@@ -258,6 +258,98 @@ function Test-Command {
     }
 }
 
+function New-DesktopShortcut {
+    <#
+    .SYNOPSIS
+        Creates a desktop shortcut (.lnk file)
+
+    .PARAMETER Name
+        Display name for the shortcut (without .lnk extension)
+
+    .PARAMETER TargetPath
+        Full path to the executable or folder
+
+    .PARAMETER WorkingDirectory
+        Working directory for the shortcut (optional)
+
+    .PARAMETER Arguments
+        Command-line arguments (optional)
+
+    .PARAMETER IconLocation
+        Path to icon file (optional, defaults to target executable)
+
+    .PARAMETER Description
+        Shortcut description (optional)
+
+    .OUTPUTS
+        Boolean - $true if shortcut created successfully, $false otherwise
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Name,
+
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath,
+
+        [string]$WorkingDirectory = "",
+
+        [string]$Arguments = "",
+
+        [string]$IconLocation = "",
+
+        [string]$Description = ""
+    )
+
+    try {
+        # Get desktop path
+        $desktopPath = [Environment]::GetFolderPath("Desktop")
+        $shortcutPath = Join-Path $desktopPath "$Name.lnk"
+
+        # Check if shortcut already exists
+        if (Test-Path $shortcutPath) {
+            Write-Host "[INFO] Desktop shortcut already exists: $Name" -ForegroundColor Gray
+            return $true
+        }
+
+        # Create WScript.Shell COM object
+        $wshShell = New-Object -ComObject WScript.Shell
+        $shortcut = $wshShell.CreateShortcut($shortcutPath)
+
+        # Set shortcut properties
+        $shortcut.TargetPath = $TargetPath
+
+        if (-not [string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+            $shortcut.WorkingDirectory = $WorkingDirectory
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($Arguments)) {
+            $shortcut.Arguments = $Arguments
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($IconLocation)) {
+            $shortcut.IconLocation = $IconLocation
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($Description)) {
+            $shortcut.Description = $Description
+        }
+
+        # Save the shortcut
+        $shortcut.Save()
+
+        # Release COM object
+        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($wshShell) | Out-Null
+
+        Write-Host "[OK] Created desktop shortcut: $Name" -ForegroundColor Green
+        return $true
+
+    } catch {
+        Write-Host "[WARNING] Failed to create desktop shortcut: $Name" -ForegroundColor Yellow
+        Write-Host "    Error: $($_.Exception.Message)" -ForegroundColor Gray
+        return $false
+    }
+}
+
 #endregion
 
 #region Authentication Validation Functions
@@ -806,6 +898,74 @@ function Start-Installation {
     Write-Host "It will check for required tools and install them only if missing."
     Write-Host ""
 
+    # Display system requirements and size information
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host "  System Requirements & Installation Sizes" -ForegroundColor Cyan
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Component Sizes (Installed):" -ForegroundColor Yellow
+    Write-Host "  • Node.js:          ~100 MB" -ForegroundColor Gray
+    Write-Host "  • Git for Windows:  ~321 MB" -ForegroundColor Gray
+    Write-Host "  • Visual Studio Code: ~500 MB" -ForegroundColor Gray
+    Write-Host "  • Claude Code CLI:  ~78 MB" -ForegroundColor Gray
+    Write-Host "  • VS Code Extension: ~100 MB" -ForegroundColor Gray
+    Write-Host "  • Pieces Desktop:   ~1 GB initially" -ForegroundColor Gray
+    Write-Host "    (Can grow to 5+ GB with user data and AI models)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "Disk Space Requirements:" -ForegroundColor Yellow
+    Write-Host "  • Core Installation:  ~2 GB free space recommended" -ForegroundColor Cyan
+    Write-Host "    (Total installed: ~1.1 GB)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  • Full Installation:  ~4 GB free space recommended" -ForegroundColor Cyan
+    Write-Host "    (Initial: ~2.1 GB, grows to 6+ GB with Pieces data)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "System Requirements:" -ForegroundColor Yellow
+    Write-Host "  • OS: Windows 10 (64-bit) or Windows 11" -ForegroundColor Gray
+    Write-Host "  • RAM: 8 GB minimum, 16 GB recommended" -ForegroundColor Gray
+    Write-Host "  • Internet: Required for installation and authentication" -ForegroundColor Gray
+    Write-Host "  • Privileges: Administrator access required" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "NOTE: Pieces Desktop stores code snippets and AI models locally," -ForegroundColor Yellow
+    Write-Host "      which increases disk usage over time." -ForegroundColor Yellow
+    Write-Host ""
+
+    # Desktop Icons Preference
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host "  Desktop Shortcuts" -ForegroundColor Cyan
+    Write-Host "===========================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Would you like desktop shortcuts created for installed applications?" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Shortcuts that may be created:" -ForegroundColor Gray
+    Write-Host "  • Visual Studio Code" -ForegroundColor Gray
+    Write-Host "  • Pieces Desktop (if Full installation)" -ForegroundColor Gray
+    Write-Host ""
+
+    $createDesktopIcons = $null
+    while ($createDesktopIcons -notin @('y', 'n')) {
+        $userInput = Read-Host "Create desktop shortcuts? [Y/N]"
+
+        if (-not [string]::IsNullOrWhiteSpace($userInput)) {
+            $firstChar = $userInput.Trim().ToLower().Substring(0,1)
+            if ($firstChar -in @('y', 'n')) {
+                $createDesktopIcons = $firstChar
+            } else {
+                Write-Host "[!] Invalid input. Please type 'Y' or 'N'" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[!] Please type 'Y' or 'N' (not just Enter)" -ForegroundColor Yellow
+        }
+    }
+
+    if ($createDesktopIcons -eq 'y') {
+        Write-Host ""
+        Write-Host "[OK] Desktop shortcuts will be created for installed applications" -ForegroundColor Green
+    } else {
+        Write-Host ""
+        Write-Host "[OK] No desktop shortcuts will be created" -ForegroundColor Cyan
+    }
+    Write-Host ""
+
     # Core vs Full Install Choice
     Write-Host "===========================================================" -ForegroundColor Cyan
     Write-Host "  Installation Type" -ForegroundColor Cyan
@@ -813,18 +973,19 @@ function Start-Installation {
     Write-Host ""
     Write-Host "Choose your installation type:" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  [C] Core Installation" -ForegroundColor White
+    Write-Host "  [C] Core Installation (~1.1 GB, 2 GB free space needed)" -ForegroundColor White
     Write-Host "      - Node.js, Git, VS Code" -ForegroundColor Gray
     Write-Host "      - Claude Code CLI" -ForegroundColor Gray
     Write-Host "      - VS Code Chat Extension" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  [F] Full Installation (RECOMMENDED)" -ForegroundColor Green
+    Write-Host "  [F] Full Installation (~2.1 GB initially, 4 GB free space needed) (RECOMMENDED)" -ForegroundColor Green
     Write-Host "      - Everything in Core, PLUS:" -ForegroundColor Gray
     Write-Host "      - Pieces Desktop: AI-powered coding assistant" -ForegroundColor Gray
     Write-Host "        * Code snippet manager with AI search" -ForegroundColor Gray
     Write-Host "        * Context-aware code suggestions" -ForegroundColor Gray
     Write-Host "        * Integrates with your workflow seamlessly" -ForegroundColor Gray
     Write-Host "        * Works offline once configured" -ForegroundColor Gray
+    Write-Host "        * NOTE: Grows to 5+ GB with data and AI models" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "Pieces Desktop enhances your coding experience with intelligent" -ForegroundColor Cyan
     Write-Host "code management and AI-powered assistance. Highly recommended!" -ForegroundColor Cyan
@@ -858,6 +1019,26 @@ function Start-Installation {
     }
     Write-Host ""
 
+    # Check available disk space
+    $systemDrive = $env:SystemDrive
+    $drive = Get-PSDrive -Name $systemDrive.TrimEnd(':')
+    $freeSpaceGB = [math]::Round($drive.Free / 1GB, 2)
+
+    Write-Host "Available disk space on $systemDrive\: $freeSpaceGB GB" -ForegroundColor Cyan
+
+    if ($freeSpaceGB -lt 2) {
+        Write-Host ""
+        Write-Host "WARNING: Low disk space detected!" -ForegroundColor Red
+        Write-Host "You may not have enough space for installation." -ForegroundColor Yellow
+        Write-Host "Please free up disk space before continuing." -ForegroundColor Yellow
+        Write-Host ""
+    } elseif ($freeSpaceGB -lt 4) {
+        Write-Host ""
+        Write-Host "NOTE: Limited disk space. Full installation (with Pieces) may require more space." -ForegroundColor Yellow
+        Write-Host ""
+    }
+    Write-Host ""
+
     $null = Read-Host "Press Enter to continue or Ctrl+C to cancel"
     Write-Host ""
 
@@ -868,25 +1049,11 @@ function Start-Installation {
     $needsCode = -not (Test-Command -Command "code" -Argument "--version" -ExpectedOutputPattern "." -DisplayName "Visual Studio Code")
     $needsClaude = -not (Test-Command -Command "claude" -Argument "--version" -ExpectedOutputPattern "." -DisplayName "Claude Code CLI")
 
-    # Check Pieces Desktop (only if Full installation selected)
-    $needsPiecesDesktop = $false
-    if ($installPieces) {
-        try {
-            $piecesInstalled = winget list --id 9NB490VLC1LL 2>&1 | Out-String
-            if ($piecesInstalled -match "9NB490VLC1LL") {
-                Write-Host "[FOUND] Pieces Desktop is already installed. Skipping installation." -ForegroundColor Green
-                $needsPiecesDesktop = $false
-            } else {
-                $needsPiecesDesktop = $true
-            }
-        } catch {
-            $needsPiecesDesktop = $true
-        }
-    }
+    # Pieces Desktop will be checked later (if Full installation selected)
 
     # --- Package Manager Detection (only if needed) ---
     $packageManager = $null
-    if ($needsNode -or $needsGit -or $needsCode -or $needsPiecesDesktop) {
+    if ($needsNode -or $needsGit -or $needsCode) {
         Write-Host "`nStep 2: One or more tools are missing. Detecting package manager..." -ForegroundColor Cyan
         if (Get-Command winget -ErrorAction SilentlyContinue) {
             Write-Host "[FOUND] Using winget as the primary package manager." -ForegroundColor Green
@@ -1490,6 +1657,18 @@ Read-Host 'Press Enter to close'
             # Refresh PATH from registry
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
                         [System.Environment]::GetEnvironmentVariable("Path","User")
+
+            # Create desktop shortcut if requested
+            if ($createDesktopIcons -eq 'y') {
+                $vscodeExePath = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe"
+                if (Test-Path $vscodeExePath) {
+                    New-DesktopShortcut -Name "Visual Studio Code" `
+                        -TargetPath $vscodeExePath `
+                        -Description "Visual Studio Code - Code Editing. Redefined."
+                } else {
+                    Write-Host "[WARNING] Could not find VS Code executable for shortcut creation" -ForegroundColor Yellow
+                }
+            }
         }
 
         # Quick auth check
@@ -1586,9 +1765,27 @@ Read-Host 'Press Enter to close'
     # --- 9. Pieces Desktop Installation ---
     $piecesInstallSuccess = $false
     $authenticatedPieces = $false
+    $needsPiecesDesktop = $false
+
+    # Check if Pieces Desktop installation is needed (only for Full installation)
+    if ($installPieces) {
+        Write-Host "`nStep 9: Checking Pieces Desktop status..." -ForegroundColor Cyan
+        try {
+            $piecesInstalled = winget list --id 9NB490VLC1LL 2>&1 | Out-String
+            if ($piecesInstalled -match "9NB490VLC1LL") {
+                Write-Host "[FOUND] Pieces Desktop is already installed. Skipping installation." -ForegroundColor Green
+                $needsPiecesDesktop = $false
+            } else {
+                $needsPiecesDesktop = $true
+            }
+        } catch {
+            # If check fails, assume not installed
+            $needsPiecesDesktop = $true
+        }
+    }
 
     if ($needsPiecesDesktop) {
-        Write-Host "`nStep 9: Installing Pieces Desktop..." -ForegroundColor Cyan
+        Write-Host "`nInstalling Pieces Desktop..." -ForegroundColor Cyan
         Write-Host ""
 
         # Only available via WinGet (Microsoft Store)
@@ -1609,6 +1806,33 @@ Read-Host 'Press Enter to close'
             if ($piecesInstallSuccess) {
                 Write-Host "[OK] Pieces Desktop installed successfully!" -ForegroundColor Green
                 Write-Host "[INFO] Installation includes both Pieces Desktop and PiecesOS." -ForegroundColor Gray
+
+                # Create desktop shortcut if requested
+                if ($createDesktopIcons -eq 'y') {
+                    # Try to find Pieces Desktop executable
+                    $possiblePiecesPaths = @(
+                        "$env:LOCALAPPDATA\Programs\Pieces\Pieces.exe",
+                        "$env:LOCALAPPDATA\Pieces\Pieces.exe",
+                        "${env:ProgramFiles}\Pieces\Pieces.exe",
+                        "${env:ProgramFiles(x86)}\Pieces\Pieces.exe"
+                    )
+
+                    $piecesExePath = $null
+                    foreach ($path in $possiblePiecesPaths) {
+                        if (Test-Path $path) {
+                            $piecesExePath = $path
+                            break
+                        }
+                    }
+
+                    if ($piecesExePath) {
+                        New-DesktopShortcut -Name "Pieces Desktop" `
+                            -TargetPath $piecesExePath `
+                            -Description "Pieces Desktop - AI-Powered Code Snippet Manager"
+                    } else {
+                        Write-Host "[INFO] Pieces Desktop shortcut will be created by Microsoft Store" -ForegroundColor Gray
+                    }
+                }
             } else {
                 Write-Host "[X] Failed to install Pieces Desktop" -ForegroundColor Red
                 Write-Host "[INFO] You can install manually from: https://pieces.app" -ForegroundColor Yellow
