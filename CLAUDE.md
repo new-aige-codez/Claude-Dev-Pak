@@ -4,14 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Windows installer script for Claude Code development environment. The repository contains a single PowerShell script (`ClaudeCodeInstaller - 10.13.25-05.26.ps1`) that automates the installation and configuration of:
+This is a Windows installer script for Claude Code development environment. The repository contains PowerShell installer scripts that automate the installation and configuration of:
 
+**Core Installation:**
 - Node.js (via winget or Chocolatey)
 - Git (via winget or Chocolatey)
 - Visual Studio Code (via winget or Chocolatey)
 - Claude Code CLI (via npm)
 - Claude authentication setup
 - VS Code Chat GUI Extension
+
+**Full Installation (includes Core, plus):**
+- GitHub Desktop (via winget or Chocolatey)
+- Pieces Desktop (via Microsoft Store)
 
 ## Script Architecture
 
@@ -33,6 +38,7 @@ The installer follows a **multi-phase execution model**:
 - **`Show-Progress`** - Animated progress indicator for background jobs with spinner
 - **`Show-ProgressPulse`** - Pulse animation for noisy operations (npm installs)
 - **`Test-Command`** - Validates installed applications by checking version output
+- **`Test-GitHubDesktop`** - Checks if GitHub Desktop is installed using multiple detection methods (installation directory, Start Menu shortcut, registry)
 
 #### Authentication Functions (`#region Authentication Validation Functions`)
 
@@ -124,6 +130,7 @@ After each installation, the script updates `$env:Path` in three ways:
 Critical paths added:
 - Node.js: `C:\Program Files\nodejs` and `%APPDATA%\npm`
 - Git: `C:\Program Files\Git\cmd`
+- GitHub Desktop: `%LOCALAPPDATA%\GitHubDesktop`
 - VS Code: `%LOCALAPPDATA%\Programs\Microsoft VS Code\bin`
 
 ### Git Bash Configuration
@@ -219,9 +226,22 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 
 ## Version Information
 
-- **Current Version**: 3.0.1
+- **Current Version**: 3.1.0
 - **Requires**: Windows 10/11, Administrator privileges
 - **Dependencies**: .NET Framework (for PowerShell), Internet connection
+
+### Changelog
+
+**Version 3.1.0** (Current)
+- Added GitHub Desktop installation support (Full installation only)
+- Added `Test-GitHubDesktop` detection function with multiple detection methods
+- Updated installation log to track GitHub Desktop
+- Supports both winget and Chocolatey package managers for GitHub Desktop
+- GitHub Desktop is now part of Full installation alongside Pieces Desktop
+
+**Version 3.0.1**
+- Initial stable release with Core and Full installation modes
+- Includes Pieces Desktop integration
 
 ## File Structure
 
