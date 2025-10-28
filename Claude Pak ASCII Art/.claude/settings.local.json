@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(Out-String)",
+      "mcp__playwright__browser_install",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_close",
+      "Bash(Start-Process \"C:\\Users\\brewb\\Desktop\\Claude Pak ASCII Art\\preview.html\")",
+      "Bash(Copy-Item \"C:\\Users\\brewb\\Desktop\\Claude Pak ASCII Art\\claudepak-splash-clean.ps1\" \"C:\\Users\\brewb\\Desktop\\Claude Pak ASCII Art\\ClaudPak-Splash-Animated.ps1\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

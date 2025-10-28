@@ -3,7 +3,16 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm install -g @modelcontextprotocol/server-playwright)",
+      "WebSearch",
+      "Bash(npm install -g @playwright/mcp)",
+      "Bash(powershell.exe -Command \"if (Test-Path \"\"$env:USERPROFILE\\.config\\claude-code\\mcp.json\"\") { Write-Output ''Found: claude-code/mcp.json'' } else { Write-Output ''Not found: claude-code/mcp.json'' }; if (Test-Path \"\"$env:APPDATA\\Claude\\claude_desktop_config.json\"\") { Write-Output ''Found: Claude/claude_desktop_config.json'' } else { Write-Output ''Not found: Claude/claude_desktop_config.json'' }\")",
+      "Bash(powershell.exe -Command \"New-Item -ItemType Directory -Force -Path \"\"$env:USERPROFILE\\.config\\claude-code\"\" | Out-Null; Write-Output ''Created directory''\")",
+      "Bash(powershell.exe -Command \"$configDir = Join-Path $env:USERPROFILE ''.config\\claude-code''; New-Item -ItemType Directory -Force -Path $configDir | Out-Null; Write-Output \"\"Created: $configDir\"\"\")",
+      "Bash(powershell.exe -Command \"[System.Environment]::GetFolderPath(''''UserProfile'''')\")",
+      "Bash(powershell.exe -Command \"New-Item -ItemType Directory -Force -Path ''C:\\Users\\brewb\\.config\\claude-code'' | Out-Null; Write-Output ''Directory created successfully''\")",
+      "Bash(npm root -g)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Installer - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .window {
+            width: 600px;
+            height: 550px;
+            background: white;
+            border: 1px solid #0078d4;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            height: 80px;
+            background: #E3F2FD;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #0078d4;
+            flex-shrink: 0;
+        }
+
+        .header h2 {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .header p {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .radio-group {
+            margin-left: 10px;
+        }
+
+        .radio-option {
+            margin-bottom: 8px;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .radio-option label {
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .radio-desc {
+            margin-left: 20px;
+            font-size: 10px;
+            color: #666;
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+
+        .groupbox {
+            border: 1px solid #a0a0a0;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .groupbox-legend {
+            position: absolute;
+            top: -8px;
+            left: 8px;
+            background: white;
+            padding: 0 5px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .checkbox-item {
+            margin-bottom: 6px;
+            margin-top: 6px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+        .checkbox-item label {
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-item.disabled label {
+            color: #a0a0a0;
+        }
+
+        .buttons {
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #ddd;
+            background: #f5f5f5;
+            flex-shrink: 0;
+        }
+
+        button {
+            padding: 6px 20px;
+            font-size: 11px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 1px solid #adadad;
+            background: #e1e1e1;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        button:hover {
+            background: #e5f1fb;
+            border-color: #0078d4;
+        }
+
+        button:active {
+            background: #cce4f7;
+        }
+
+        .install-button {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+            font-weight: bold;
+        }
+
+        .install-button:hover {
+            background: #218838;
+            border-color: #1e7e34;
+        }
+
+        .install-button:active {
+            background: #1e7e34;
+        }
+
+        .cancel-button:hover {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <!-- Header Banner -->
+        <div class="header">
+            <h2>🤖 Claude Code Development Environment Setup</h2>
+            <p>Select your installation preferences below</p>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Installation Type Section -->
+            <div class="section">
+                <div class="section-title">Installation Type:</div>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" name="installType" id="radioFull" value="full" checked>
+                        <label for="radioFull">Full Installation (Recommended)</label>
+                        <div class="radio-desc">
+                            Includes: All components + GitHub Desktop + Pieces Desktop<br>
+                            Size: ~2.3 GB initially, grows to 6+ GB
+                        </div>
+                    </div>
+
+                    <div class="radio-option">
+                        <input type="radio" name="installType" id="radioCore" value="core">
+                        <label for="radioCore">Core Installation</label>
+                        <div class="radio-desc">
+                            Includes: Node.js, Git, VS Code, Claude CLI only<br>
+                            Size: ~1.1 GB
+                        </div>
+                    </div>
+
+                    <div class="radio-option">
+                        <input type="radio" name="installType" id="radioCustom" value="custom">
+                        <label for="radioCustom">Custom Installation</label>
+                        <div class="radio-desc">
+                            Select individual components below
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Components Section -->
+            <div class="section">
+                <div class="section-title">Components to Install:</div>
+
+                <!-- Core Components GroupBox -->
+                <div class="groupbox">
+                    <div class="groupbox-legend">Core Components (Required)</div>
+                    <div class="checkbox-item disabled">
+                        <input type="checkbox" id="checkNodeJS" class="core-component" checked disabled>
+                        <label for="checkNodeJS">Node.js (v20 LTS) - JavaScript runtime</label>
+                    </div>
+                    <div class="checkbox-item disabled">
+                        <input type="checkbox" id="checkGit" class="core-component" checked disabled>
+                        <label for="checkGit">Git for Windows - Version control system</label>
+                    </div>
+                    <div class="checkbox-item disabled">
+                        <input type="checkbox" id="checkVSCode" class="core-component" checked disabled>
+                        <label for="checkVSCode">Visual Studio Code - Code editor</label>
+                    </div>
+                    <div class="checkbox-item disabled">
+                        <input type="checkbox" id="checkClaude" class="core-component" checked disabled>
+                        <label for="checkClaude">Claude Code CLI - AI coding assistant</label>
+                    </div>
+                </div>
+
+                <!-- Optional Components GroupBox -->
+                <div class="groupbox">
+                    <div class="groupbox-legend">Optional Components</div>
+                    <div class="checkbox-item" id="githubDesktopItem">
+                        <input type="checkbox" id="checkGitHubDesktop" class="optional-component">
+                        <label for="checkGitHubDesktop">GitHub Desktop - Git GUI client (~200 MB)</label>
+                    </div>
+                    <div class="checkbox-item" id="piecesDesktopItem">
+                        <input type="checkbox" id="checkPiecesDesktop" class="optional-component">
+                        <label for="checkPiecesDesktop">Pieces Desktop - AI snippet manager (~1+ GB)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Options Section -->
+            <div class="section">
+                <div class="section-title">Additional Options:</div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="checkShortcuts" checked>
+                    <label for="checkShortcuts">Create desktop shortcuts for installed applications</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="checkAuthenticate" checked>
+                    <label for="checkAuthenticate">Authenticate Claude CLI after installation</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="checkSilent">
+                    <label for="checkSilent">Run installation silently (minimal output)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="buttons">
+            <button id="btnSave">Save Configuration</button>
+            <button id="btnInstall" class="install-button">Install Now</button>
+            <button id="btnCancel" class="cancel-button">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Get elements
+        const radioFull = document.getElementById('radioFull');
+        const radioCore = document.getElementById('radioCore');
+        const radioCustom = document.getElementById('radioCustom');
+
+        const checkGitHubDesktop = document.getElementById('checkGitHubDesktop');
+        const checkPiecesDesktop = document.getElementById('checkPiecesDesktop');
+        const githubDesktopItem = document.getElementById('githubDesktopItem');
+        const piecesDesktopItem = document.getElementById('piecesDesktopItem');
+
+        const btnSave = document.getElementById('btnSave');
+        const btnInstall = document.getElementById('btnInstall');
+        const btnCancel = document.getElementById('btnCancel');
+
+        // Installation type change handler
+        function handleInstallTypeChange() {
+            const selectedType = document.querySelector('input[name="installType"]:checked').value;
+
+            if (selectedType === 'full') {
+                // Full: Check and disable optional components
+                checkGitHubDesktop.checked = true;
+                checkGitHubDesktop.disabled = true;
+                checkPiecesDesktop.checked = true;
+                checkPiecesDesktop.disabled = true;
+
+                githubDesktopItem.classList.add('disabled');
+                piecesDesktopItem.classList.add('disabled');
+
+            } else if (selectedType === 'core') {
+                // Core: Uncheck and disable optional components
+                checkGitHubDesktop.checked = false;
+                checkGitHubDesktop.disabled = true;
+                checkPiecesDesktop.checked = false;
+                checkPiecesDesktop.disabled = true;
+
+                githubDesktopItem.classList.add('disabled');
+                piecesDesktopItem.classList.add('disabled');
+
+            } else if (selectedType === 'custom') {
+                // Custom: Enable optional components for user selection
+                checkGitHubDesktop.disabled = false;
+                checkPiecesDesktop.disabled = false;
+
+                githubDesktopItem.classList.remove('disabled');
+                piecesDesktopItem.classList.remove('disabled');
+            }
+        }
+
+        // Attach event listeners
+        radioFull.addEventListener('change', handleInstallTypeChange);
+        radioCore.addEventListener('change', handleInstallTypeChange);
+        radioCustom.addEventListener('change', handleInstallTypeChange);
+
+        // Initialize state
+        handleInstallTypeChange();
+
+        // Gather configuration
+        function gatherConfiguration() {
+            const installType = document.querySelector('input[name="installType"]:checked').value;
+
+            const config = {
+                installationType: installType.charAt(0).toUpperCase() + installType.slice(1),
+                silent: document.getElementById('checkSilent').checked,
+                createDesktopShortcuts: document.getElementById('checkShortcuts').checked,
+                authenticateNow: document.getElementById('checkAuthenticate').checked,
+                authenticationMethod: "SeparateWindow",
+                components: {
+                    nodejs: {
+                        wingetId: "OpenJS.NodeJS.LTS",
+                        chocoId: "nodejs-lts",
+                        displayName: "Node.js",
+                        required: true,
+                        enabled: true,
+                        testCommand: "node",
+                        testArgs: "--version",
+                        testPattern: "^v",
+                        pathsToAdd: ["C:\\Program Files\\nodejs", "%APPDATA%\\npm"]
+                    },
+                    git: {
+                        wingetId: "Git.Git",
+                        chocoId: "git",
+                        displayName: "Git",
+                        required: true,
+                        enabled: true,
+                        testCommand: "git",
+                        testArgs: "--version",
+                        testPattern: "git version",
+                        pathsToAdd: ["C:\\Program Files\\Git\\cmd"]
+                    },
+                    vscode: {
+                        wingetId: "Microsoft.VisualStudioCode",
+                        chocoId: "vscode",
+                        displayName: "Visual Studio Code",
+                        required: true,
+                        enabled: true,
+                        testCommand: "code",
+                        testArgs: "--version",
+                        testPattern: ".",
+                        pathsToAdd: ["%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\bin"]
+                    },
+                    "claude-cli": {
+                        source: "npm",
+                        package: "@anthropic-ai/claude-code",
+                        global: true,
+                        displayName: "Claude Code CLI",
+                        required: true,
+                        enabled: true,
+                        testCommand: "claude",
+                        testArgs: "--version",
+                        testPattern: ".",
+                        pathsToAdd: ["%APPDATA%\\npm"]
+                    },
+                    "github-desktop": {
+                        wingetId: "GitHub.GitHubDesktop",
+                        chocoId: "github-desktop",
+                        displayName: "GitHub Desktop",
+                        required: false,
+                        enabled: document.getElementById('checkGitHubDesktop').checked,
+                        includeInFullInstall: true,
+                        pathsToAdd: ["%LOCALAPPDATA%\\GitHubDesktop"]
+                    },
+                    "pieces-desktop": {
+                        source: "msstore",
+                        storeId: "9P5JNQ0XR5W6",
+                        displayName: "Pieces Desktop",
+                        required: false,
+                        enabled: document.getElementById('checkPiecesDesktop').checked,
+                        includeInFullInstall: true
+                    }
+                },
+                paths: {
+                    claudeProjects: "%USERPROFILE%\\ClaudeProjects",
+                    logDirectory: "%LOCALAPPDATA%\\ClaudeCodeInstaller"
+                },
+                timeouts: {
+                    authenticationMinutes: 15,
+                    installationMinutes: 30
+                }
+            };
+
+            return config;
+        }
+
+        // Save Configuration button
+        btnSave.addEventListener('click', function() {
+            const config = gatherConfiguration();
+            console.log('Configuration to save:', JSON.stringify(config, null, 2));
+
+            // In browser, show JSON in alert
+            alert('Configuration generated!\n\nCheck browser console (F12) for full JSON.\n\nIn PowerShell version, this will save to InstallConfig.json');
+        });
+
+        // Install Now button
+        btnInstall.addEventListener('click', function() {
+            const config = gatherConfiguration();
+            const installType = config.installationType;
+            const componentCount = Object.values(config.components).filter(c => c.enabled).length;
+
+            const message = `Ready to install Claude Code with the following settings:\n\n` +
+                `Installation Type: ${installType}\n` +
+                `Components: ${componentCount} selected\n` +
+                `Desktop Shortcuts: ${config.createDesktopShortcuts ? 'Yes' : 'No'}\n` +
+                `Authentication: ${config.authenticateNow ? 'Yes' : 'No'}\n\n` +
+                `This may take 10-30 minutes depending on your internet connection.\n\n` +
+                `Proceed with installation?`;
+
+            if (confirm(message)) {
+                console.log('Installing with configuration:', JSON.stringify(config, null, 2));
+                alert('In PowerShell version, this will:\n1. Save configuration to InstallConfig.json\n2. Launch ClaudeCodeInstaller.ps1');
+            }
+        });
+
+        // Cancel button
+        btnCancel.addEventListener('click', function() {
+            if (confirm('Close configuration tool without saving?')) {
+                alert('In PowerShell version, this will close the window.');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+{
+  "_comment": "Claude Code Installer Configuration File",
+  "_version": "1.0.0",
+  "installationType": "Full",
+  "silent": false,
+  "createDesktopShortcuts": true,
+  "authenticateNow": true,
+  "authenticationMethod": "SeparateWindow",
+  "components": {
+    "nodejs": {
+      "wingetId": "OpenJS.NodeJS.LTS",
+      "chocoId": "nodejs-lts",
+      "displayName": "Node.js",
+      "required": true,
+      "testCommand": "node",
+      "testArgs": "--version",
+      "testPattern": "^v",
+      "pathsToAdd": [
+        "C:\\Program Files\\nodejs",
+        "%APPDATA%\\npm"
+      ]
+    },
+    "git": {
+      "wingetId": "Git.Git",
+      "chocoId": "git",
+      "displayName": "Git",
+      "required": true,
+      "testCommand": "git",
+      "testArgs": "--version",
+      "testPattern": "git version",
+      "pathsToAdd": [
+        "C:\\Program Files\\Git\\cmd"
+      ]
+    },
+    "vscode": {
+      "wingetId": "Microsoft.VisualStudioCode",
+      "chocoId": "vscode",
+      "displayName": "Visual Studio Code",
+      "required": true,
+      "testCommand": "code",
+      "testArgs": "--version",
+      "testPattern": ".",
+      "pathsToAdd": [
+        "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\bin"
+      ]
+    },
+    "claude-cli": {
+      "source": "npm",
+      "package": "@anthropic-ai/claude-code",
+      "global": true,
+      "displayName": "Claude Code CLI",
+      "required": true,
+      "testCommand": "claude",
+      "testArgs": "--version",
+      "testPattern": ".",
+      "pathsToAdd": [
+        "%APPDATA%\\npm"
+      ]
+    },
+    "github-desktop": {
+      "wingetId": "GitHub.GitHubDesktop",
+      "chocoId": "github-desktop",
+      "displayName": "GitHub Desktop",
+      "required": false,
+      "includeInFullInstall": true,
+      "pathsToAdd": [
+        "%LOCALAPPDATA%\\GitHubDesktop"
+      ]
+    },
+    "pieces-desktop": {
+      "source": "msstore",
+      "storeId": "9P5JNQ0XR5W6",
+      "displayName": "Pieces Desktop",
+      "required": false,
+      "includeInFullInstall": true
+    }
+  },
+  "paths": {
+    "claudeProjects": "%USERPROFILE%\\ClaudeProjects",
+    "logDirectory": "%LOCALAPPDATA%\\ClaudeCodeInstaller"
+  },
+  "timeouts": {
+    "authenticationMinutes": 15,
+    "installationMinutes": 30
+  }
+}
